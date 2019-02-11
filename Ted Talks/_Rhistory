@@ -1,0 +1,310 @@
+?count
+table1 <- data.frame(state = rep(1:3, 2), country = rep(c("A", "B"), 3), vals = rnorm(6))
+table2 <- table1[c(1, 3, 4), ]
+table1
+table2
+anti_join(table1, table2, by = c("state", "country"))
+require(dplyr)
+anti_join(table1, table2, by = c("state", "country"))
+q()
+test <- read.table(file.choose(), sep = "\t", header = T, stringsAsFactors = F)
+dim(test)
+head(test)
+names(test)
+test <- read.table(file.choose(), sep = "\t", header = F, stringsAsFactors = F)
+names(test)
+head(test)
+names(test) <- c("user_id", "psychoattribute", "psychovalue", "flag")
+require(tidyverse)
+length(unique(test$psychovalue))
+test <- test %>%
+select(user_id, psychovalue) %>%
+spread(., psychovalue, psychovalue)
+dim(test)
+test <- read.table(file.choose(), sep = "\t", header = T, stringsAsFactors = F)
+names(test) <- c("user_id", "psychoattribute", "psychovalue", "flag")
+head(test)
+head(test); dim(test)
+length(unique(test$psychovalue))
+test2 <- test %>%
+select(user_id, psychovalue) %>%
+spread(., psychovalue, psychovalue, fill = "N")
+head(test2)
+View(test2)
+test3 <- lapply(test2, function(x) ifelse(x == "N", 0, 1)) %>%
+do.call(., "cbind")
+lapply(test2, function(x) ifelse(x == "N", 0, 1)) %>%
+do.call(., "cbind") -> test3
+test2 <- lapply(test2, function(x) ifelse(x == "N", 0, 1))
+test3 <- do.call("cbind", test2)
+dim(test3)
+View(test3)
+test3 <- subset(test3, -user_id)
+?subset
+test3 <- subset(test3, select = -user_id)
+psy.cor <- cor(test3)
+require(qgraph)
+windows()
+View(psy.cor)
+qgraph(psy.cor)
+qgraph(psy.cor, shape = "circle",
+posCol = "darkgreen", negCol = "darkred",
+layout = "spring", vsize = 10)
+qgraph(psy.cor, shape = "circle",
+posCol = "darkgreen", negCol = "darkred",
+layout = "spring", vsize = 1)
+qgraph(psy.cor, shape = "circle",
+posCol = "darkgreen", negCol = "darkred",
+layout = "spring", vsize = 1)
+x <- c('Affluency',
+'Age',
+'ConsumerElectronicsSegment',
+'Ethnicity',
+'Gender',
+'IXIInsurancePropensitySegments',
+'Income',
+'InsuranceGroups',
+'InsuranceSegmentation',
+'JobRole',
+'LikelyRetailerType',
+'LikelytoHave',
+'NetWorth',
+'ProportionofAssetsinInsurance',
+'VehicleType')
+x
+?combn
+combn(x, 2)
+combn(x, 2, simplify = F)
+x <- do.call(combn(x, 2, simplify = F), "rbind")
+x <- do.call("rbind", combn(x, 2, simplify = F))
+x
+write.table(x, "clipboard", sep = "\t")
+write.table(x, "clipboard", sep = "\t", row.names = F)
+x <- c('Affluency',
+'Age',
+'Ethnicity',
+'Gender',
+'Income',
+'JobRole',
+'LikelyRetailerType',
+'LikelytoHave',
+'NetWorth',
+'VehicleType')
+x <- do.call("rbind", combn(x, 2, simplify = F))
+write.table(x, "clipboard", sep = "\t", row.names = F)
+data(mtcars)
+mtcars$cars <- row.names(mtcars)
+library(tidyr)
+library(dplyr)
+m2 <- select(mtcars, -(hp:qsec))
+colKeep <- c('vs', 'am')
+m2
+m3 <- m2 %>%
+gather(keyCol, val, -carb)
+m3
+m4 <- m2 %>%
+gather(keyCol, val, one_of(colKeep))  # one_of
+head(m4)
+seg4 <- read.table("clipboard",
+sep = "\t", header = T,
+stringsAsFactors = F, comment.char = "",
+allowEscapes = T, na.strings = "", quote = "\n")
+setwd("C:/Users/traveler/Desktop/Jim/R/Webscraping/Ted Talks")
+library(data.table)
+library(RCurl)
+library(XML)
+library(dplyr)
+XPath.author <- '//*[contains(concat( " ", @class, " " ), concat( " ", "talk-link__speaker", " " ))]'
+# XPath present title
+XPath.title <- '//*[contains(concat( " ", @class, " " ), concat( " ", "m5", " " ))]//*[contains(concat( " ", @class, " " ), concat( " ", "ga-link", " " ))]'
+# gather a list of pages to read
+pages <- c(1:3)  # the most recent pages
+urls <- data.table::rbindlist(lapply(pages, function(x){
+url <- paste("https://www.ted.com/talks?page=", x,
+"&sort=newest&topics%5B%5D=innovation", sep = "")
+data.frame(url, row.names = F)
+}),
+fill = T)
+# write a function to extract the data
+webscrap <- function(urls, XPath){
+data.table::rbindlist(apply(urls, 1, function(url){
+xData <- RCurl::getURL(url)  # need the RCurl package in order to pass the URL to XML package for https server
+doc1 <- XML::htmlParse(xData)
+extract <- getNodeSet(doc1, XPath)  # insert the XPath here
+x <- data.frame(sapply(extract, function(x) { XML::xmlValue(x) }))
+}), fill = T)
+}
+author <- webscrap(urls, XPath.author)
+title <- webscrap(urls, XPath.title)
+library(stringr)
+library(rvest)
+# text cleaning up, e.g. str_to_lower, replace " " with "_"
+names(author) <- "author"
+names(title) <- "title"
+author <- gsub(pattern = " ", replacement = "_", stringr::str_to_lower(author$author))
+author <- stringi::stri_trans_general(author, "latin-ascii")  # remove diacritic marks
+title <- gsub(pattern = " ", replacement = "_", stringr::str_to_lower(title$title))
+title <- gsub(pattern = "\n|,|\\.|\\?|\\(|\\)", replacement = "", title)
+title <- gsub(pattern = "\\'", replacement = "_", title)
+# use \\p{Pd} to match em, en unicode dashes, set perl = T
+title <- gsub(pattern = "\\p{Pd}", replacement = "", title, perl = T) %>%
+gsub(pattern = "__", replacement = "_")
+innovation_transcripts <- data.frame(paste("https://www.ted.com/talks/", author, "_", title, "/transcript", sep = ""))
+extract_P_text <- function(urls) {
+data.table::rbindlist(
+apply(urls, 1, function(url) {
+# need RCurl to pass the URL to XML package for https server
+xData <- RCurl::getURL(url)
+p_text <- read_html(xData) %>%
+rvest::html_nodes(xpath = ".//p") %>%
+rvest::html_text(trim = T) %>%
+paste(., collapse = "n")
+# clean the text here #
+p_text <- gsub(pattern = "\t", "", p_text)
+p_text <- gsub(pattern = "\n", "", p_text)
+p_text <- gsub(pattern = "nSubscribe to receive email notificationswhenever new talks are published.nPlease enter an email address.nPlease enter a valid email address.nDid you mean\\?nPlease checkDailyorWeeklyand try again.nPlease check your details and try again.nPlease check your details and try again.nSorry, we\\'re currently having troubleprocessing new newsletter signups.Please try again later.nThanks\\! Please check your inboxfor a confirmation email.nIf you want to get even more from TED,like the ability to save talks to watch later,\\ sign up for a TED account now.nTED.com translations are made possible by volunteertranslators. Learn more about theOpen Translation Project.n© TED Conferences, LLC", "", p_text)
+p_text <- gsub(pattern = "\\.n", ". ", p_text)
+p_text <- gsub(pattern = "\\?n", "? ", p_text)
+p_text <- gsub(pattern = "\\)n", ") ", p_text)
+# put it into data.frame #
+x <- data.frame(p_text)
+}  # the apply function ends here
+), fill = T)  # the data.table::rbindlist function ends here
+}
+transcripts <- extract_P_text(innovation_transcripts)
+transcripts$author <- author
+transcripts$title <- title
+write.table(x = transcripts,
+file = "tedtalks_innovation_transcripts.txt",
+append = F,
+row.names = F)
+length(transcripts$p_text)
+seq_along(along.with = length(transcripts$p_text))
+seq(1, length(transcripts$p_text))
+exportOntoGen <- data.frame(id = seq(1, length(transcripts$p_text)),
+body = transcripts$p_text)
+dim(exportOntoGen)
+names(exportOntoGen)
+write.table(x = exportOntoGen,
+file = "tedtalks_innovation_transcripts (for OntoGen).txt",
+append = F,
+row.names = F,
+sep = "\t")
+?write.table
+grep(pattern = "If you’ve reached this page in error, please contact us and let us know what happened", x = exportOntoGen)
+grep(pattern = "If you’ve reached this page in error, please contact us and let us know what happened", x = exportOntoGen$body)
+grepl(pattern = "If you’ve reached this page in error, please contact us and let us know what happened", x = exportOntoGen$body)
+grepl(pattern = "If you\\’ve reached this page in error, please contact us and let us know what happened", x = exportOntoGen$body)
+grepl(pattern = "If you\\’ve reached this page in error, please contact us and let us know what happened\\.", x = exportOntoGen$body)
+grepl(pattern = "If you\\’ve reached this page in error\\, please contact us and let us know what happened\\.", x = exportOntoGen$body)
+grepl(pattern = "If you\\’ve reached this page in error\\, please contact us and let us know what happened\\.", x = exportOntoGen$body, ignore.case = T)
+grepl(pattern = "If you’ve reached this page in error, please contact us and let us know what happened.", x = exportOntoGen$body, ignore.case = T)
+grepl(pattern = "^If you’ve reached this page in error, please contact us and let us know what happened.", x = exportOntoGen$body, ignore.case = T)
+grepl(pattern = "^If you’ve reached this page in error,", x = exportOntoGen$body, ignore.case = T)
+grepl(pattern = "reached this page in error,", x = exportOntoGen$body, ignore.case = T)
+?grepl
+grep(pattern = "reached this page in error,", x = exportOntoGen$body, ignore.case = T)
+title
+grep(pattern = "reached this page in error,", x = exportOntoGen$body, ignore.case = T)
+write.table(innovation_transcripts, file = "check.txt")
+write.table(innovation_transcripts, file = "check.txt", row.names = F)
+error <- grep(pattern = "reached this page in error,", x = transcripts$p_text, ignore.case = T)
+error
+transcripts$p_text[error]
+dim(transcripts)
+error
+length(error)
+setdiff(x = 1:108, error)
+length(transcripts$p_text)
+setdiff(x = 1:length(transcripts$p_text), error)
+write.table(x = transcripts,
+file = "tedtalks_innovation_transcripts2.txt",
+append = F,
+row.names = F)
+length(transcripts2$p_text)
+transcripts2 <- transcripts[setdiff(x = 1:length(transcripts$p_text), error), ]
+write.table(x = transcripts2,
+file = "tedtalks_innovation_transcripts2.txt",
+append = F,
+row.names = F)
+length(transcripts2$p_text)
+write.table(x = exportOntoGen,
+file = "tedtalks_innovation_transcripts (for OntoGen).txt",
+append = F,
+sep = "\t",
+row.names = F,
+col.names = F)
+length(transcripts2$p_text)
+length(exportOntoGen$body)
+exportOntoGen <- data.frame(id = seq(1, length(transcripts2$p_text)),
+body = transcripts2$p_text)
+length(exportOntoGen$body)
+write.table(x = exportOntoGen,
+file = "tedtalks_innovation_transcripts (for OntoGen).txt",
+append = F,
+sep = "\t",
+row.names = F,
+col.names = F)
+transcripts$id <- seq(1, length(transcripts$p_text))
+transcripts2 <- transcripts[setdiff(x = 1:length(transcripts$p_text), error), ]
+write.table(x = transcripts2,
+file = "tedtalks_innovation_transcripts2.txt",
+append = F,
+row.names = F)
+exportOntoGen <- data.frame(id = transcripts2$id),
+body = transcripts2$p_text)
+write.table(x = exportOntoGen,
+file = "tedtalks_innovation_transcripts (for OntoGen).txt",
+append = F,
+sep = "\t",
+row.names = F,
+col.names = F)
+exportOntoGen <- data.frame(id = transcripts2$id,
+body = transcripts2$p_text)
+length(exportOntoGen$id)
+exportOntoGen$id
+write.table(x = exportOntoGen,
+file = "tedtalks_innovation_transcripts (for OntoGen).txt",
+append = F,
+sep = "\t",
+row.names = F,
+col.names = F)
+View(subset(transcripts2, id, title, author))
+View(subset(transcripts2, select = c(id, title, author)))
+selector = c(51, 99, 27, 11)
+subset(transcripts2$title, id = selector)
+subset(transcripts2, select = title & id = selector)
+subset(transcripts2$title, transcripts2$id = selector)
+subset(transcripts2$title, transcripts2$id == selector)
+subset(transcripts2$title, transcripts2$id %in% selector)
+subset(transcripts2, transcripts2$id %in% selector, select = c(title, id))
+subset(transcripts2, transcripts2$id %in% selector, select = c(title, id)) %>%
+arrange(nchar(title))
+subset(transcripts2, transcripts2$id %in% selector, select = c(title, id)) %>%
+arrange(-nchar(title))
+selector = c(91, 12, 44, 90, 65, 70, 9, 13, 81, 93, 4)
+subset(transcripts2, transcripts2$id %in% selector, select = c(title, id)) %>%
+arrange(-nchar(title))
+selector = c(2, 82, 84, 47, 83, 35, 62, 39)
+subset(transcripts2, transcripts2$id %in% selector, select = c(title, id)) %>%
+arrange(-nchar(title))
+selector = c(106, 14, 52, 101, 5, 38, 73, 85)
+subset(transcripts2, transcripts2$id %in% selector, select = c(title, id)) %>%
+arrange(-nchar(title))
+selector = c(71, 97, 105, 8, 3, 36, 61, 56, 75, 69, 94, 30)
+subset(transcripts2, transcripts2$id %in% selector, select = c(title, id)) %>%
+arrange(-nchar(title))
+selector = c(108, 86, 15, 31, 43, 80, 10, 60, 79, 54, 33)
+subset(transcripts2, transcripts2$id %in% selector, select = c(title, id)) %>%
+arrange(-nchar(title))
+selector = c(17, 77, 58, 103, 20)
+subset(transcripts2, transcripts2$id %in% selector, select = c(title, id)) %>%
+arrange(-nchar(title))
+selector = c(66, 1, 76, 50, 23, 53, 64, 46, 57, 72)
+subset(transcripts2, transcripts2$id %in% selector, select = c(title, id)) %>%
+arrange(-nchar(title))
+install.packages("dataMaid")
+library(dataMaid)
+ls()
+rm(list=ls(0))
+q(0)
